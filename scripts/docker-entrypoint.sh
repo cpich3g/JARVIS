@@ -20,6 +20,10 @@ if [ -n "$OPENCLAW_CFG_B64" ]; then
   printf '%s' "$OPENCLAW_CFG_B64" | base64 -d > "$CONFIG_FILE"
   if [ $? -eq 0 ]; then
     echo "[entrypoint] Config written OK."
+    # Clear stale device identity so the gateway re-issues tokens.
+    rm -f "${CONFIG_DIR}/state/identity/device.json" \
+          "${CONFIG_DIR}/state/identity/device-auth.json" 2>/dev/null
+    echo "[entrypoint] Cleared stale device identity tokens."
   else
     echo "[entrypoint] WARNING: Config write failed." >&2
   fi
