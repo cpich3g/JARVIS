@@ -23,6 +23,11 @@ const PROVIDER_API_KEY_CONFIG: Record<string, Omit<ProviderApiKeyConfig, "fallba
     primaryVar: "ANTHROPIC_API_KEY",
     prefixedVar: "ANTHROPIC_API_KEY_",
   },
+  // Azure OpenAI uses DefaultAzureCredential at runtime; AZURE_OPENAI_API_KEY
+  // is only a fallback for environments using static key auth.
+  "azure-openai": {
+    primaryVar: "AZURE_OPENAI_API_KEY",
+  },
   google: {
     liveSingle: GOOGLE_LIVE_SINGLE_KEY,
     listVar: "GEMINI_API_KEYS",

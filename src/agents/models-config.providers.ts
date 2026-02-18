@@ -34,6 +34,65 @@ type ModelsConfig = NonNullable<OpenClawConfig["models"]>;
 export type ProviderConfig = NonNullable<ModelsConfig["providers"]>[string];
 
 const MINIMAX_PORTAL_BASE_URL = "https://api.minimax.io/anthropic";
+
+// ─────────────────────────────────────────────────
+// Azure OpenAI
+// ─────────────────────────────────────────────────
+
+/** Standard env var for the Azure OpenAI endpoint, e.g.
+ *  https://ai-justinjoy-4099.openai.azure.com/openai/v1/
+ */
+export const AZURE_OPENAI_ENDPOINT_ENV = "AZURE_OPENAI_ENDPOINT";
+
+/**
+ * Sentinel env var name written to models.json.
+ * The actual token is injected per-request via authStorage.setRuntimeApiKey.
+ */
+export const AZURE_OPENAI_TOKEN_ENV = "AZURE_OPENAI_TOKEN";
+
+const AZURE_OPENAI_DEFAULT_CONTEXT_WINDOW = 128000;
+const AZURE_OPENAI_DEFAULT_MAX_TOKENS = 16384;
+const AZURE_OPENAI_DEFAULT_COST = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 };
+
+function buildAzureOpenAiProvider(baseUrl: string): ProviderConfig {
+  const normalizedBaseUrl = baseUrl.replace(/\/+$/, "");
+  return {
+    baseUrl: normalizedBaseUrl,
+    api: "openai-responses",
+    auth: "azure-openai",
+    // Sentinel value – actual token is set at runtime via DefaultAzureCredential.
+    apiKey: AZURE_OPENAI_TOKEN_ENV,
+    models: [
+      {
+        id: "gpt-4.1-gs",
+        name: "GPT-4.1 GS",
+        reasoning: false,
+        input: ["text", "image"],
+        cost: AZURE_OPENAI_DEFAULT_COST,
+        contextWindow: AZURE_OPENAI_DEFAULT_CONTEXT_WINDOW,
+        maxTokens: AZURE_OPENAI_DEFAULT_MAX_TOKENS,
+      },
+      {
+        id: "gpt-5.2-codex",
+        name: "GPT-5.2 Codex",
+        reasoning: true,
+        input: ["text"],
+        cost: AZURE_OPENAI_DEFAULT_COST,
+        contextWindow: AZURE_OPENAI_DEFAULT_CONTEXT_WINDOW,
+        maxTokens: AZURE_OPENAI_DEFAULT_MAX_TOKENS,
+      },
+      {
+        id: "gpt-5.2",
+        name: "GPT-5.2",
+        reasoning: true,
+        input: ["text", "image"],
+        cost: AZURE_OPENAI_DEFAULT_COST,
+        contextWindow: AZURE_OPENAI_DEFAULT_CONTEXT_WINDOW,
+        maxTokens: AZURE_OPENAI_DEFAULT_MAX_TOKENS,
+      },
+    ],
+  };
+}
 const MINIMAX_DEFAULT_MODEL_ID = "MiniMax-M2.1";
 const MINIMAX_DEFAULT_VISION_MODEL_ID = "MiniMax-VL-01";
 const MINIMAX_DEFAULT_CONTEXT_WINDOW = 200000;
@@ -383,6 +442,13 @@ export function normalizeProviders(params: {
         const apiKey = resolveAwsSdkApiKeyVarName();
         mutated = true;
         normalizedProvider = { ...normalizedProvider, apiKey };
+      } else if (authMode === "azure-openai") {
+        // Azure tokens are dynamic; write the sentinel env var name.
+        // The actual token is injected at runtime via authStorage.setRuntimeApiKey.
+        if (normalizedProvider.apiKey !== AZURE_OPENAI_TOKEN_ENV) {
+          mutated = true;
+          normalizedProvider = { ...normalizedProvider, apiKey: AZURE_OPENAI_TOKEN_ENV };
+        }
       } else {
         const fromEnv = resolveEnvApiKeyVarName(normalizedKey);
         const fromProfiles = resolveApiKeyFromProfiles({
@@ -805,6 +871,13 @@ export async function resolveImplicitProviders(params: {
     resolveApiKeyFromProfiles({ provider: "nvidia", store: authStore });
   if (nvidiaKey) {
     providers.nvidia = { ...buildNvidiaProvider(), apiKey: nvidiaKey };
+  }
+
+  // Azure OpenAI – auto-configure when AZURE_OPENAI_ENDPOINT is set.
+  // Auth is handled at request time via DefaultAzureCredential (azure-openai mode).
+  const azureEndpoint = process.env[AZURE_OPENAI_ENDPOINT_ENV]?.trim();
+  if (azureEndpoint && !params.explicitProviders?.["azure-openai"]) {
+    providers["azure-openai"] = buildAzureOpenAiProvider(azureEndpoint);
   }
 
   return providers;

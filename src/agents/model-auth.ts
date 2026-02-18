@@ -1,5 +1,6 @@
 import path from "node:path";
 import { type Api, getEnvApiKey, type Model } from "@mariozechner/pi-ai";
+import { resolveAzureOpenAiToken } from "./azure-openai-auth.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import type { OpenClawConfig } from "../config/config.js";
 import type { ModelProviderAuthMode, ModelProviderConfig } from "../config/types.js";
@@ -61,7 +62,13 @@ function resolveProviderAuthOverride(
 ): ModelProviderAuthMode | undefined {
   const entry = resolveProviderConfig(cfg, provider);
   const auth = entry?.auth;
-  if (auth === "api-key" || auth === "aws-sdk" || auth === "oauth" || auth === "token") {
+  if (
+    auth === "api-key" ||
+    auth === "aws-sdk" ||
+    auth === "azure-openai" ||
+    auth === "oauth" ||
+    auth === "token"
+  ) {
     return auth;
   }
   return undefined;
@@ -165,6 +172,17 @@ export async function resolveApiKeyForProvider(params: {
   const authOverride = resolveProviderAuthOverride(cfg, provider);
   if (authOverride === "aws-sdk") {
     return resolveAwsSdkAuthInfo();
+  }
+
+  if (authOverride === "azure-openai") {
+    const token = await resolveAzureOpenAiToken();
+    if (!token) {
+      throw new Error(
+        `No Azure token resolved for provider "${provider}". ` +
+          "Ensure you are signed in (az login) and @azure/identity is installed.",
+      );
+    }
+    return { apiKey: token, source: "azure-cli (DefaultAzureCredential)", mode: "api-key" };
   }
 
   const order = resolveAuthProfileOrder({
@@ -289,6 +307,10 @@ export function resolveEnvApiKey(provider: string): EnvApiKeyResult | null {
 
   if (normalized === "huggingface") {
     return pick("HUGGINGFACE_HUB_TOKEN") ?? pick("HF_TOKEN");
+  }
+
+  if (normalized === "azure-openai") {
+    return pick("AZURE_OPENAI_API_KEY");
   }
 
   const envMap: Record<string, string> = {

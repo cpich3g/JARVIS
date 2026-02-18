@@ -38,6 +38,10 @@ const hasAuthForProvider = (
   if (provider === "amazon-bedrock" && resolveAwsSdkEnvVarName()) {
     return true;
   }
+  // Azure OpenAI uses CLI credentials resolved at request time; treat as always authenticated.
+  if (cfg.models?.providers?.[provider]?.auth === "azure-openai") {
+    return true;
+  }
   if (resolveEnvApiKey(provider)) {
     return true;
   }
