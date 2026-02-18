@@ -2,6 +2,7 @@ import type { VoiceCallConfig } from "./config.js";
 import { resolveVoiceCallConfig, validateProviderConfig } from "./config.js";
 import type { CoreConfig } from "./core-bridge.js";
 import { CallManager } from "./manager.js";
+import { AcsProvider } from "./providers/acs.js";
 import type { VoiceCallProvider } from "./providers/base.js";
 import { MockProvider } from "./providers/mock.js";
 import { PlivoProvider } from "./providers/plivo.js";
@@ -83,6 +84,18 @@ function resolveProvider(config: VoiceCallConfig): VoiceCallProvider {
           skipVerification: config.skipSignatureVerification,
           ringTimeoutSec: Math.max(1, Math.floor(config.ringTimeoutMs / 1000)),
           webhookSecurity: config.webhookSecurity,
+        },
+      );
+    case "acs":
+      return new AcsProvider(
+        {
+          connectionString: config.acs?.connectionString,
+          realtimeModel: config.acs?.realtimeModel,
+          azureOpenAiEndpoint: config.acs?.azureOpenAiEndpoint,
+        },
+        {
+          publicUrl: config.publicUrl,
+          skipVerification: config.skipSignatureVerification,
         },
       );
     case "mock":

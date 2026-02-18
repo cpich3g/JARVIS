@@ -1,4 +1,5 @@
 export type { VoiceCallProvider } from "./base.js";
+export { AcsProvider } from "./acs.js";
 export { MockProvider } from "./mock.js";
 export {
   OpenAIRealtimeSTTProvider,

@@ -34,7 +34,7 @@ const voiceCallConfigSchema = {
   uiHints: {
     provider: {
       label: "Provider",
-      help: "Use twilio, telnyx, or mock for dev/no-network.",
+      help: "Use twilio, telnyx, plivo, acs, or mock for dev/no-network.",
     },
     fromNumber: { label: "From Number", placeholder: "+15550001234" },
     toNumber: { label: "Default To Number", placeholder: "+15550001234" },
@@ -46,6 +46,9 @@ const voiceCallConfigSchema = {
     "telnyx.publicKey": { label: "Telnyx Public Key", sensitive: true },
     "twilio.accountSid": { label: "Twilio Account SID" },
     "twilio.authToken": { label: "Twilio Auth Token", sensitive: true },
+    "acs.connectionString": { label: "ACS Connection String", sensitive: true },
+    "acs.realtimeModel": { label: "ACS Realtime Audio Model" },
+    "acs.azureOpenAiEndpoint": { label: "Azure OpenAI Endpoint (for Realtime)" },
     "outbound.defaultMode": { label: "Default Call Mode" },
     "outbound.notifyHangupDelaySec": {
       label: "Notify Hangup Delay (sec)",
@@ -143,7 +146,7 @@ const VoiceCallToolSchema = Type.Union([
 const voiceCallPlugin = {
   id: "voice-call",
   name: "Voice Call",
-  description: "Voice-call plugin with Telnyx/Twilio/Plivo providers",
+  description: "Voice-call plugin with Telnyx/Twilio/Plivo/ACS providers",
   configSchema: voiceCallConfigSchema,
   register(api: OpenClawPluginApi) {
     const config = resolveVoiceCallConfig(voiceCallConfigSchema.parse(api.pluginConfig));

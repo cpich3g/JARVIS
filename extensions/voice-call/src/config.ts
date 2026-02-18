@@ -68,6 +68,18 @@ export const PlivoConfigSchema = z
   .strict();
 export type PlivoConfig = z.infer<typeof PlivoConfigSchema>;
 
+export const AcsConfigSchema = z
+  .object({
+    /** ACS connection string (endpoint + access key) */
+    connectionString: z.string().min(1).optional(),
+    /** Azure OpenAI deployment name for gpt-realtime audio model */
+    realtimeModel: z.string().min(1).optional(),
+    /** Azure OpenAI endpoint for realtime (defaults to models.providers.azure-openai.baseUrl) */
+    azureOpenAiEndpoint: z.string().url().optional(),
+  })
+  .strict();
+export type AcsConfig = z.infer<typeof AcsConfigSchema>;
+
 // -----------------------------------------------------------------------------
 // STT/TTS Configuration
 // -----------------------------------------------------------------------------
@@ -240,8 +252,8 @@ export const VoiceCallConfigSchema = z
     /** Enable voice call functionality */
     enabled: z.boolean().default(false),
 
-    /** Active provider (telnyx, twilio, plivo, or mock) */
-    provider: z.enum(["telnyx", "twilio", "plivo", "mock"]).optional(),
+    /** Active provider (telnyx, twilio, plivo, acs, or mock) */
+    provider: z.enum(["telnyx", "twilio", "plivo", "acs", "mock"]).optional(),
 
     /** Telnyx-specific configuration */
     telnyx: TelnyxConfigSchema.optional(),
@@ -251,6 +263,9 @@ export const VoiceCallConfigSchema = z
 
     /** Plivo-specific configuration */
     plivo: PlivoConfigSchema.optional(),
+
+    /** Azure Communication Services configuration */
+    acs: AcsConfigSchema.optional(),
 
     /** Phone number to call from (E.164) */
     fromNumber: E164Schema.optional(),
@@ -369,6 +384,16 @@ export function resolveVoiceCallConfig(config: VoiceCallConfig): VoiceCallConfig
     resolved.plivo.authToken = resolved.plivo.authToken ?? process.env.PLIVO_AUTH_TOKEN;
   }
 
+  // ACS
+  if (resolved.provider === "acs") {
+    resolved.acs = resolved.acs ?? {};
+    resolved.acs.connectionString =
+      resolved.acs.connectionString ?? process.env.ACS_CONNECTION_STRING;
+    resolved.acs.realtimeModel = resolved.acs.realtimeModel ?? process.env.ACS_REALTIME_MODEL;
+    resolved.acs.azureOpenAiEndpoint =
+      resolved.acs.azureOpenAiEndpoint ?? process.env.AZURE_OPENAI_ENDPOINT;
+  }
+
   // Tunnel Config
   resolved.tunnel = resolved.tunnel ?? {
     provider: "none",
@@ -454,6 +479,14 @@ export function validateProviderConfig(config: VoiceCallConfig): {
     if (!config.plivo?.authToken) {
       errors.push(
         "plugins.entries.voice-call.config.plivo.authToken is required (or set PLIVO_AUTH_TOKEN env)",
+      );
+    }
+  }
+
+  if (config.provider === "acs") {
+    if (!config.acs?.connectionString) {
+      errors.push(
+        "plugins.entries.voice-call.config.acs.connectionString is required (or set ACS_CONNECTION_STRING env)",
       );
     }
   }

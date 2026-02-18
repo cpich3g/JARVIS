@@ -3,7 +3,7 @@
   "uiHints": {
     "provider": {
       "label": "Provider",
-      "help": "Use twilio, telnyx, or mock for dev/no-network."
+      "help": "Use twilio, telnyx, plivo, acs, or mock for dev/no-network."
     },
     "fromNumber": {
       "label": "From Number",
@@ -40,6 +40,16 @@
     "twilio.authToken": {
       "label": "Twilio Auth Token",
       "sensitive": true
+    },
+    "acs.connectionString": {
+      "label": "ACS Connection String",
+      "sensitive": true
+    },
+    "acs.realtimeModel": {
+      "label": "ACS Realtime Audio Model"
+    },
+    "acs.azureOpenAiEndpoint": {
+      "label": "Azure OpenAI Endpoint (for Realtime)"
     },
     "outbound.defaultMode": {
       "label": "Default Call Mode"
@@ -168,7 +178,7 @@
       },
       "provider": {
         "type": "string",
-        "enum": ["telnyx", "twilio", "plivo", "mock"]
+        "enum": ["telnyx", "twilio", "plivo", "acs", "mock"]
       },
       "telnyx": {
         "type": "object",
@@ -205,6 +215,21 @@
             "type": "string"
           },
           "authToken": {
+            "type": "string"
+          }
+        }
+      },
+      "acs": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "connectionString": {
+            "type": "string"
+          },
+          "realtimeModel": {
+            "type": "string"
+          },
+          "azureOpenAiEndpoint": {
             "type": "string"
           }
         }
