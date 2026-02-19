@@ -61,14 +61,19 @@ fi
 # --- Install missing ClawHub skills ---
 # Reads skill entries from openclaw.json and installs any that are missing.
 SKILLS_DIR="${CONFIG_DIR}/skills"
+echo "[entrypoint] Checking for ClawHub skills to install..."
+echo "[entrypoint] CONFIG_FILE=$CONFIG_FILE exists=$(test -f "$CONFIG_FILE" && echo yes || echo no)"
+echo "[entrypoint] clawhub=$(command -v clawhub 2>/dev/null || echo 'NOT FOUND')"
+echo "[entrypoint] jq=$(command -v jq 2>/dev/null || echo 'NOT FOUND')"
 if [ -f "$CONFIG_FILE" ] && command -v clawhub >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
   SKILL_NAMES=$(jq -r '.skills.entries // {} | keys[]' "$CONFIG_FILE" 2>/dev/null)
+  echo "[entrypoint] Skills found in config: $(echo $SKILL_NAMES | tr '\n' ' ')"
   if [ -n "$SKILL_NAMES" ]; then
     mkdir -p "$SKILLS_DIR"
     for skill in $SKILL_NAMES; do
       if [ ! -d "${SKILLS_DIR}/${skill}" ]; then
         echo "[entrypoint] Installing ClawHub skill: ${skill}..."
-        gosu node clawhub install "$skill" --workdir "$CONFIG_DIR" --no-input 2>&1 || \
+        gosu node clawhub install "$skill" --workdir "$CONFIG_DIR" --force 2>&1 || \
           echo "[entrypoint] WARNING: Failed to install skill: ${skill}" >&2
       else
         echo "[entrypoint] Skill already installed: ${skill}"
