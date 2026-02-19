@@ -1,0 +1,76 @@
+{
+  "gateway": {
+    "mode": "local",
+    "bind": "lan",
+    "port": 8080
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "azure-openai/gpt-4.1",
+        "fallbacks": ["azure-openai/gpt-4.1-mini"]
+      }
+    },
+    "list": [
+      {
+        "id": "main",
+        "default": true
+      }
+    ]
+  },
+  "agent": {
+    "workspace": "/data/workspace",
+    "thinkingDefault": "high",
+    "timeoutSeconds": 1800,
+    "heartbeat": { "every": "0m" }
+  },
+  "skills": {
+    "entries": {
+      "ai-humanizer": { "enabled": true },
+      "youtube-watcher": { "enabled": true },
+      "clawdhub": { "enabled": true },
+      "playwright-mcp": { "enabled": true },
+      "thinking-partner": { "enabled": true },
+      "stock-watcher": { "enabled": true },
+      "technical-analyst": { "enabled": true },
+      "daily-ai-news-skill": { "enabled": true },
+      "travel-manager": { "enabled": true },
+      "the-sports-db": { "enabled": true }
+    }
+  },
+  "tools": {
+    "web": {
+      "search": {
+        "provider": "perplexity"
+      }
+    }
+  },
+  "channels": {
+    "whatsapp": {
+      "enabled": false
+    }
+  },
+  "plugins": {
+    "voice-call": {
+      "enabled": true,
+      "config": {
+        "provider": "acs"
+      }
+    }
+  },
+  "session": {
+    "scope": "per-sender",
+    "resetTriggers": ["/new", "/reset"],
+    "reset": {
+      "mode": "daily",
+      "atHour": 4,
+      "idleMinutes": 10080
+    }
+  },
+  "logging": {
+    "level": "info"
+  },
+  "meta": {
+    "lastTouchedVersion": "2026.2.18"
+  }
+}
