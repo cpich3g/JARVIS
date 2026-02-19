@@ -70,15 +70,30 @@ if [ -f "$CONFIG_FILE" ] && command -v clawhub >/dev/null 2>&1 && command -v jq 
   echo "[entrypoint] Skills found in config: $(echo $SKILL_NAMES | tr '\n' ' ')"
   if [ -n "$SKILL_NAMES" ]; then
     mkdir -p "$SKILLS_DIR"
+    FAILED_SKILLS=""
     for skill in $SKILL_NAMES; do
       if [ ! -d "${SKILLS_DIR}/${skill}" ]; then
         echo "[entrypoint] Installing ClawHub skill: ${skill}..."
-        gosu node clawhub install "$skill" --workdir "$CONFIG_DIR" --force 2>&1 || \
-          echo "[entrypoint] WARNING: Failed to install skill: ${skill}" >&2
+        if ! gosu node clawhub install "$skill" --workdir "$CONFIG_DIR" --force 2>&1; then
+          FAILED_SKILLS="${FAILED_SKILLS} ${skill}"
+          echo "[entrypoint] Will retry: ${skill}" >&2
+        fi
       else
         echo "[entrypoint] Skill already installed: ${skill}"
       fi
     done
+    # Retry failed skills after a delay (rate limits typically reset quickly)
+    if [ -n "$FAILED_SKILLS" ]; then
+      echo "[entrypoint] Waiting 15s before retrying rate-limited skills..."
+      sleep 15
+      for skill in $FAILED_SKILLS; do
+        if [ ! -d "${SKILLS_DIR}/${skill}" ]; then
+          echo "[entrypoint] Retrying skill: ${skill}..."
+          gosu node clawhub install "$skill" --workdir "$CONFIG_DIR" --force 2>&1 || \
+            echo "[entrypoint] WARNING: Failed to install skill after retry: ${skill}" >&2
+        fi
+      done
+    fi
   fi
 fi
 
