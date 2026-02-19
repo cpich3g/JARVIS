@@ -51,9 +51,12 @@ RUN chown -R node:node /app
 COPY scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
+# Install clawhub CLI for skill auto-install on startup
+RUN npm install -g clawhub
+
 # Security: the entrypoint runs as root to fix NFS volume permissions,
 # then drops to the 'node' user (uid 1000) via gosu before exec'ing CMD.
-RUN apt-get update && apt-get install -y --no-install-recommends gosu && \
+RUN apt-get update && apt-get install -y --no-install-recommends gosu jq && \
   apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Entrypoint writes openclaw.json from OPENCLAW_CFG_B64 env var (if set) before

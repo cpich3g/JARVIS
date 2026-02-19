@@ -58,6 +58,25 @@ if [ -n "$WA_CREDS_B64" ]; then
   fi
 fi
 
+# --- Install missing ClawHub skills ---
+# Reads skill entries from openclaw.json and installs any that are missing.
+SKILLS_DIR="${CONFIG_DIR}/skills"
+if [ -f "$CONFIG_FILE" ] && command -v clawhub >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+  SKILL_NAMES=$(jq -r '.skills.entries // {} | keys[]' "$CONFIG_FILE" 2>/dev/null)
+  if [ -n "$SKILL_NAMES" ]; then
+    mkdir -p "$SKILLS_DIR"
+    for skill in $SKILL_NAMES; do
+      if [ ! -d "${SKILLS_DIR}/${skill}" ]; then
+        echo "[entrypoint] Installing ClawHub skill: ${skill}..."
+        gosu node clawhub install "$skill" --workdir "$CONFIG_DIR" --no-input 2>&1 || \
+          echo "[entrypoint] WARNING: Failed to install skill: ${skill}" >&2
+      else
+        echo "[entrypoint] Skill already installed: ${skill}"
+      fi
+    done
+  fi
+fi
+
 # Ensure config dir is owned by node
 chown -R node:node "$CONFIG_DIR" 2>/dev/null || true
 
