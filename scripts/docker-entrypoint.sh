@@ -11,8 +11,17 @@
 # ~/.openclaw/sessions/ (on the NFS volume) and are NOT touched here
 # UNLESS WA_CREDS_B64 is set (one-time seed for initial deployment).
 
-CONFIG_DIR="${HOME}/.openclaw"
+# Resolve home for the node user (uid 1000) regardless of current USER.
+NODE_HOME=$(getent passwd node | cut -d: -f6)
+CONFIG_DIR="${NODE_HOME}/.openclaw"
 CONFIG_FILE="${CONFIG_DIR}/openclaw.json"
+
+# --- Fix NFS volume permissions (runs as root before dropping privileges) ---
+DATA_DIR="${OPENCLAW_STATE_DIR:-/data}"
+if [ -d "$DATA_DIR" ] && [ "$(id -u)" = "0" ]; then
+  echo "[entrypoint] Fixing ownership of ${DATA_DIR} for node (uid 1000)..."
+  chown -R node:node "$DATA_DIR" 2>/dev/null || true
+fi
 
 if [ -n "$OPENCLAW_CFG_B64" ]; then
   mkdir -p "$CONFIG_DIR"
@@ -49,4 +58,11 @@ if [ -n "$WA_CREDS_B64" ]; then
   fi
 fi
 
+# Ensure config dir is owned by node
+chown -R node:node "$CONFIG_DIR" 2>/dev/null || true
+
+# Drop privileges to the node user (uid 1000) for the actual gateway process.
+if [ "$(id -u)" = "0" ]; then
+  exec gosu node "$@"
+fi
 exec "$@"

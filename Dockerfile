@@ -51,10 +51,10 @@ RUN chown -R node:node /app
 COPY scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# Security hardening: Run as non-root user
-# The node:22-bookworm image includes a 'node' user (uid 1000)
-# This reduces the attack surface by preventing container escape via root privileges
-USER node
+# Security: the entrypoint runs as root to fix NFS volume permissions,
+# then drops to the 'node' user (uid 1000) via gosu before exec'ing CMD.
+RUN apt-get update && apt-get install -y --no-install-recommends gosu && \
+  apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Entrypoint writes openclaw.json from OPENCLAW_CFG_B64 env var (if set) before
 # starting the gateway. This lets cloud deployments seed config via an ACA secret
